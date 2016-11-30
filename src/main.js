@@ -14,9 +14,11 @@ var optimist = require('optimist')
     .alias('s', 'source')
     .alias('u', 'url')
     .alias('o', 'outputpath')
+    .alias('c', 'classname')
     .describe('s', 'Path to your swagger.json file')
     .describe('u', 'Url of your swagger.json file')
-    .describe('o', 'Path where to store generated files');
+    .describe('o', 'Path where to store generated files')
+    .describe('c', 'Class name prefix');
 
 var fs = require('fs');
 
@@ -49,6 +51,8 @@ else {
     process.exit(1);
 }
 
+var classname = argv.classname;
+
 var outputdir = argv.outputpath || './output';
 
 if (!fs.existsSync(outputdir))
@@ -72,14 +76,14 @@ if (fromUrl) {
 
             fs.writeFileSync(dest, body, 'utf-8');
 
-            var g = new genRef.Generator(dest, outputdir);
+            var g = new genRef.Generator(dest, outputdir, classname);
             g.Debug = true;
             g.generateAPIClient();
         });
 }
 else {
     //Do Job
-    var g = new genRef.Generator(sourceFile, outputdir);
+    var g = new genRef.Generator(sourceFile, outputdir, classname);
     g.Debug = true;
     g.generateAPIClient();
 }

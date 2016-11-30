@@ -54,8 +54,8 @@ export class {{&className}}ApiClientService {
 		});
 			{{/isPatternType}}
 			{{^isPatternType}}
-		if(parameters['{{&camelCaseName}}'] !== undefined){
-			queryParameters['{{&name}}'] = parameters['{{&camelCaseName}}'];
+		if({{&camelCaseName}} !== undefined){
+			queryParameters['{{&name}}'] = {{&camelCaseName}};
 		}
 			{{/isPatternType}}
 			{{/isSingleton}}

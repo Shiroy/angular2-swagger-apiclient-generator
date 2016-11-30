@@ -225,7 +225,7 @@ var Generator = (function () {
 
         });
 
-        _.forEach(swagger.definitions, function (defin, defVal) {
+        _.forEach(swagger.definitions, function addDefinitions(defin, defVal) {
             var defName = that.camelCase(defVal);
 
             var definition = {
@@ -244,10 +244,31 @@ var Generator = (function () {
                     typescriptType: null
                 };
 
-                if (property.isArray)
-                    property.type = _.has(propin.items, '$ref') ? that.camelCase(propin.items["$ref"].replace("#/definitions/", "")) : propin.type;
-                else
-                    property.type = _.has(propin, '$ref') ? that.camelCase(propin["$ref"].replace("#/definitions/", "")) : propin.type;
+                if (property.isArray) {
+                    if(_.has(propin.items, '$ref')) {
+                        property.type = that.camelCase(propin.items["$ref"].replace("#/definitions/", ""))
+                    }
+                    else if(propin.items.type === 'object') {
+                        var subPropertyTypeName = defName + propVal + "Type";
+                        addDefpropin(propin.items, subPropertyTypeName);
+                        property.type = subPropertyTypeName;
+                    }
+                    else {
+                        property.type = propin.items.type;
+                    }
+                }
+                else {
+                    if(_.has(propin, '$ref'))
+                        property.type = that.camelCase(propin["$ref"].replace("#/definitions/", "")) 
+                    else if(propin.type === 'object') {
+                        var subPropertyTypeName = defName + propVal + "Type";
+                        addDefpropin(propin, subPropertyTypeName);
+                        property.type = subPropertyTypeName;
+                    }
+                    else {
+                        property.type = propin.type;
+                    }
+                }                    
 
                 if (property.type === 'integer' || property.type === 'double')
                     property.typescriptType = 'number';

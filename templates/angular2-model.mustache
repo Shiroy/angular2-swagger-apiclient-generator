@@ -2,7 +2,7 @@
 import { {{type}} } from "./{{type}}"
 {{/refs}}
 
-export class {{&name}} {
+export interface {{&name}} {
 {{#properties}}
 	{{#isArray}}
 		{{name}}: {{typescriptType}}[];

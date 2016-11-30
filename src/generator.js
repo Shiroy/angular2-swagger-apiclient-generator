@@ -138,8 +138,70 @@ var Generator = (function () {
             definitions: []
         };
 
+        function addDefinitions(defin, defVal) {
+            var defName = that.camelCase(defVal);
+
+            var definition = {
+                name: defName,
+                properties: [],
+                refs: [],
+            };
+
+            _.forEach(defin.properties, function (propin, propVal) {
+
+                var property = {
+                    name: propVal,
+                    isRef: _.has(propin, '$ref') || (propin.type === 'array' && _.has(propin.items, '$ref')),
+                    isArray: propin.type === 'array',
+                    type: null,
+                    typescriptType: null
+                };
+
+                if (property.isArray) {
+                    if(_.has(propin.items, '$ref')) {
+                        property.type = that.camelCase(propin.items["$ref"].replace("#/definitions/", ""))
+                    }
+                    else if(propin.items.type === 'object') {
+                        var subPropertyTypeName = that.camelCase(defName + '-' + propVal + '-' + "Type");
+                        addDefpropin(propin.items, subPropertyTypeName);
+                        property.type = subPropertyTypeName;
+                    }
+                    else {
+                        property.type = propin.items.type;
+                    }
+                }
+                else {
+                    if(_.has(propin, '$ref'))
+                        property.type = that.camelCase(propin["$ref"].replace("#/definitions/", "")) 
+                    else if(propin.type === 'object') {
+                        var subPropertyTypeName = defName + propVal + "Type";
+                        addDefpropin(propin, subPropertyTypeName);
+                        property.type = subPropertyTypeName;
+                    }
+                    else {
+                        property.type = propin.type;
+                    }
+                }                    
+
+                if (property.type === 'integer' || property.type === 'double')
+                    property.typescriptType = 'number';
+                else
+                    property.typescriptType = property.type;
+
+
+                if (property.isRef)
+                    definition.refs.push(property);
+                else
+                    definition.properties.push(property);
+            });
+
+            data.definitions.push(definition);
+        }
+
         _.forEach(swagger.paths, function (api, path) {
             var globalParams = [];
+
+            
 
             _.forEach(api, function (op, m) {
                 if (m.toLowerCase() === 'parameters') {
@@ -182,8 +244,15 @@ var Generator = (function () {
                     if (parameter['x-proxy-header'] && !data.isNode)
                         return;
 
-                    if (_.has(parameter, 'schema') && _.isString(parameter.schema.$ref))
-                        parameter.type = that.camelCase(that.getRefType(parameter.schema.$ref));
+                    if (_.has(parameter, 'schema')){
+                        if (_.isString(parameter.schema.$ref))
+                            parameter.type = that.camelCase(that.getRefType(parameter.schema.$ref));
+                        else if(parameter.schema.type == 'object') {
+                            var subTypeName = that.camelCase(method.methodName + '-' + parameter.name + '-' + "Type"); 
+                            addDefinitions(parameter.schema, subTypeName);
+                            parameter.type = subTypeName;
+                        }
+                    }                        
 
                     parameter.camelCaseName = that.camelCase(parameter.name);
 
@@ -227,65 +296,7 @@ var Generator = (function () {
 
         });
 
-        _.forEach(swagger.definitions, function addDefinitions(defin, defVal) {
-            var defName = that.camelCase(defVal);
-
-            var definition = {
-                name: defName,
-                properties: [],
-                refs: [],
-            };
-
-            _.forEach(defin.properties, function (propin, propVal) {
-
-                var property = {
-                    name: propVal,
-                    isRef: _.has(propin, '$ref') || (propin.type === 'array' && _.has(propin.items, '$ref')),
-                    isArray: propin.type === 'array',
-                    type: null,
-                    typescriptType: null
-                };
-
-                if (property.isArray) {
-                    if(_.has(propin.items, '$ref')) {
-                        property.type = that.camelCase(propin.items["$ref"].replace("#/definitions/", ""))
-                    }
-                    else if(propin.items.type === 'object') {
-                        var subPropertyTypeName = defName + propVal + "Type";
-                        addDefpropin(propin.items, subPropertyTypeName);
-                        property.type = subPropertyTypeName;
-                    }
-                    else {
-                        property.type = propin.items.type;
-                    }
-                }
-                else {
-                    if(_.has(propin, '$ref'))
-                        property.type = that.camelCase(propin["$ref"].replace("#/definitions/", "")) 
-                    else if(propin.type === 'object') {
-                        var subPropertyTypeName = defName + propVal + "Type";
-                        addDefpropin(propin, subPropertyTypeName);
-                        property.type = subPropertyTypeName;
-                    }
-                    else {
-                        property.type = propin.type;
-                    }
-                }                    
-
-                if (property.type === 'integer' || property.type === 'double')
-                    property.typescriptType = 'number';
-                else
-                    property.typescriptType = property.type;
-
-
-                if (property.isRef)
-                    definition.refs.push(property);
-                else
-                    definition.properties.push(property);
-            });
-
-            data.definitions.push(definition);
-        });
+        _.forEach(swagger.definitions, addDefinitions);
 
         if (data.definitions.length > 0)
             data.definitions[data.definitions.length - 1].last = true;

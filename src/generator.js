@@ -163,6 +163,8 @@ var Generator = (function () {
                     parameters: [],
                     hasJsonResponse: _.some(op.produces, function (response) { // TODO PREROBIT
                         return response.indexOf('/json') != -1;
+                    }) || _.some(swagger.produces, function(response) {
+                        return response.indexOf('/json') != -1;
                     })
                 };
 

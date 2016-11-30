@@ -85,7 +85,7 @@ export class {{&className}}ApiClientService {
 {{/parameters}}		
 	
 		return this.http
-			.{{angular2httpMethod}}(this.domain + uri, payload, { headers: headers, params: queryParameters }).toPromise()
+			.{{angular2httpMethod}}(this.domain + uri, {{^isGET}}payload,{{/isGET}} { headers: headers}).toPromise()
 			.then((res: Response) => {
 			   {{#hasJsonResponse}}
 			   return new Promise<{ status: number, payload: {{responseTypes}} }>((resolve, reject) => {

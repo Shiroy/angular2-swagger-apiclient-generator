@@ -1,6 +1,8 @@
 import { Injectable } from 'angular2/angular2';
 import { Http, Response, Headers } from 'angular2/http';
-import { {{&className}}_MODELS } from './models/{{&className}}_models';
+{{#definitions}}
+import { {{name}} } from './models/{{&className}}_models';
+{{/definitions}} 
 
 @Injectable()
 export class {{&className}}ApiClientService {

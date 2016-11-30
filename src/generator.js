@@ -228,7 +228,8 @@ var Generator = (function () {
                         return response.indexOf('/json') != -1;
                     }) || _.some(swagger.produces, function(response) {
                         return response.indexOf('/json') != -1;
-                    })
+                    }),
+                    responses: []
                 };
 
                 var params = [];
@@ -288,19 +289,103 @@ var Generator = (function () {
                     method.parameters.push(parameter);
                 });
 
+                var responses = {}
+                if(_.has(op, 'responses'))
+                    responses = op.responses;
+
+                _.forIn(responses, function(respDef, statusCode) {
+
+                    if(statusCode === 'default') {
+                        return;
+                    }
+
+                    var response = {
+                        status: statusCode,
+                        description: respDef.description || "No description provided",                        
+                    };
+
+                    if(_.has(respDef, 'schema')) {
+                        response.void = false;
+
+                        response.isArray = respDef.schema.type === 'array';
+
+                        if(response.isArray) {
+                            if (_.isString(respDef.schema.items.$ref))
+                                response.type = that.camelCase(that.getRefType(respDef.schema.items.$ref));
+                            else if(respDef.schema.items.type == 'object') {
+                                var subTypeName = that.camelCase(method.methodName + '-' + 'Response' + '-' + statusCode + '-' + "Type"); 
+                                addDefinitions(respDef.schema, subTypeName);
+                                response.type = subTypeName;
+                            }
+                            else {
+                                response.type = respDef.schema.items.type;
+                            }
+                        }
+                        else {
+                            if (_.isString(respDef.schema.$ref))
+                                response.type = that.camelCase(that.getRefType(respDef.schema.$ref));
+                            else if(respDef.schema.type == 'object') {
+                                var subTypeName = that.camelCase(method.methodName + '-' + 'Response' + '-' + statusCode + '-' + "Type"); 
+                                addDefinitions(respDef.schema, subTypeName);
+                                response.type = subTypeName;
+                            }
+                            else {
+                                response.type = respDef.schema.type
+                            }
+                        }
+
+                        if (response.type === 'integer' || response.type === 'double')
+                            response.typescriptType = 'number';
+                        else
+                            response.typescriptType = response.type;
+
+                        if (response.typescriptType === 'number' || response.typescriptType === 'string') {
+                            response.baseType = true;
+                        }
+                    }
+                    else {
+                        response.void = true; 
+                    }
+
+                    method.responses.push(response);
+                });
+
+                method.responseTypes = '';
+
+                if(method.responses.length == 0)
+                    method.responseTypes = 'any';
+                else {
+                    var voidIncluded = false;
+
+                    var allReturnTypes = method.responses.filter(function(r) {
+                        if(r.void){
+                            voidIncluded = true;
+                        }
+                        return r.void == false;
+                    }).map(function(r) {
+                        return r.typescriptType + (r.isArray ? '[]': '');
+                    });
+
+                    if(voidIncluded) {
+                        allReturnTypes.push('null');
+                    }
+
+                    method.responseTypes = _.uniq(allReturnTypes).join('|');                   
+                }
+
                 if (method.parameters.length > 0)
                     method.parameters[method.parameters.length - 1].last = true;
 
                 data.methods.push(method);
-            });
-
-
+            });            
         });
 
         _.forEach(swagger.definitions, addDefinitions);
 
         if (data.definitions.length > 0)
             data.definitions[data.definitions.length - 1].last = true;
+
+        console.log(JSON.stringify(data, null, 4));
 
         return data;
     }

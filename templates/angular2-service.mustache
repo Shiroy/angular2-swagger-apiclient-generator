@@ -16,10 +16,6 @@ export class {{&className}}ApiClientService {
 		if(this.domain.length === 0) {
 			throw new Error('Domain parameter must be specified as a string.');
 		}
-		
-		{{#isSecure}}
-			this.token = (typeof options === 'object') ? (options.token ? options.token : {}) : {};
-		{{/isSecure}}
 	}
 
 
@@ -33,7 +29,7 @@ export class {{&className}}ApiClientService {
 	{{/parameters}}
 	* 
 	*/
-	public {{&methodName}}({{#parameters}}{{&camelCaseName}}: {{typescriptType}}{{^last}}, {{/last}}{{/parameters}}) {
+	public {{&methodName}}({{#parameters}}{{&camelCaseName}}: {{typescriptType}}{{^last}}, {{/last}}{{/parameters}}) : Promise<{ status: number, payload: {{responseTypes}} }> {
 		var uri = '{{&path}}';
 		var payload = {};	
 		var queryParameters = {};
@@ -89,18 +85,36 @@ export class {{&className}}ApiClientService {
 {{/parameters}}		
 	
 		return this.http
-			.{{angular2httpMethod}}(this.domain + uri, payload, { headers: headers, params: queryParameters })
-			.map((res: Response) => {
+			.{{angular2httpMethod}}(this.domain + uri, payload, { headers: headers, params: queryParameters }).toPromise()
+			.then((res: Response) => {
 			   {{#hasJsonResponse}}
-               var result = res.json();
+			   return new Promise<{ status: number, payload: {{responseTypes}} }>((resolve, reject) => {
+				    {{#responses}}
+				    if(res.status == {{status}}) {
+				    	{{#void}}
+				    	resolve({status: {{status}}, payload: null });
+				    	{{/void}}
+				    	{{^void}}
+				    	{{#baseType}}
+				    	resolve({status: {{status}}, payload: res.text(){{#isArray}}[]{{/isArray}}})
+				    	{{/baseType}}
+				    	{{^baseType}}
+				    	resolve({status: {{status}}, payload: res.json() as {{typescriptType}}{{#isArray}}[]{{/isArray}} });
+				    	{{/baseType}} 
+				    	{{/void}}
+				    	return;
+				    }
+				    {{/responses}}
+    
+				    reject(res.toString());
+					return;
+				});
 			   {{/hasJsonResponse}}
 			   {{^hasJsonResponse}}
 			   var result = null;
 			   
 			   // TODO: this method does not return JSON response, so you need to handle response by your own
-			   {{/hasJsonResponse}}
-			   
-               return result;
+			   {{/hasJsonResponse}}              
             });
 	}
 	

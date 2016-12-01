@@ -134,7 +134,7 @@ var Generator = (function () {
             isSecure: swagger.securityDefinitions !== undefined,
             moduleName: MODULE_NAME,
             className: CLASS_NAME,
-            domain: (swagger.schemes && swagger.schemes.length > 0 && swagger.host && swagger.basePath) ? swagger.schemes[0] + '://' + swagger.host + swagger.basePath : '',
+            domain: (swagger.schemes && swagger.schemes.length > 0 && swagger.host) ? swagger.schemes[0] + '://' + swagger.host + (swagger.basePath ? swagger.basePath : '') : '',
             methods: [],
             definitions: []
         };

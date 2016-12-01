@@ -9,9 +9,8 @@ export class {{&className}}ApiClientService {
 	
 	domain:string;
 	
-	constructor(public http: Http, options?: any) {
-		var domain = (typeof options === 'object') ? options.domain : options;
-		this.domain = typeof(domain) === 'string' ? domain : '{{&domain}}';
+	constructor(public http: Http) {
+		this.domain = '{{&domain}}';
 		
 		if(this.domain.length === 0) {
 			throw new Error('Domain parameter must be specified as a string.');

@@ -69,7 +69,7 @@ export class {{&className}}ApiClientService {
 			{{/isSingleton}}
 			{{/isHeaderParameter}}
 			{{#isBodyParameter}}
-		payload['{{&name}}'] = {{&camelCaseName}};
+		payload = {{&camelCaseName}};
 			{{/isBodyParameter}}
 			{{#isFormParameter}}
 			{{#isSingleton}}

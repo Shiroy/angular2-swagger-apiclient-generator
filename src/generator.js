@@ -136,8 +136,26 @@ var Generator = (function () {
             className: CLASS_NAME,
             domain: (swagger.schemes && swagger.schemes.length > 0 && swagger.host) ? swagger.schemes[0] + '://' + swagger.host + (swagger.basePath ? swagger.basePath : '') : '',
             methods: [],
-            definitions: []
+            definitions: [],
+            securities: []
         };
+
+        if(_.has(swagger, 'securityDefinitions')) {
+            _.forIn(swagger.securityDefinitions, function(def, name) {
+
+                if(def.type != "apiKey" || def.in != "header") {
+                    console.log("[Error] '"+ name + "' is not a supported security type. We currently support only api keys in headers");
+                    return;
+                }
+
+                var security = {
+                    name: name,
+                    headerName: def.name
+                }
+
+                data.securities.push(security);
+            });
+        }
 
         function addDefinitions(defin, defVal) {
             var defName = that.camelCase(defVal);
@@ -229,7 +247,8 @@ var Generator = (function () {
                     }) || _.some(swagger.produces, function(response) {
                         return response.indexOf('/json') != -1;
                     }),
-                    responses: []
+                    responses: [],
+                    securities: data.securities
                 };
 
                 var params = [];

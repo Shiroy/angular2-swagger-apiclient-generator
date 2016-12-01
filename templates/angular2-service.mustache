@@ -8,6 +8,9 @@ import { {{name}} } from './models/{{&className}}_models';
 export class {{&className}}ApiClientService {
 	
 	domain:string;
+	{{#securities}}
+	{{name}}:string;
+	{{/securities}}
 	
 	constructor(public http: Http) {
 		this.domain = '{{&domain}}';
@@ -68,6 +71,13 @@ export class {{&className}}ApiClientService {
 		}
 			{{/isSingleton}}
 			{{/isHeaderParameter}}
+			{{#isSecure}}
+			{{#securities}}
+		if(this.{{name}}){
+			headers.append('{{headerName}}', this.{{name}});
+		}
+			{{/securities}}
+			{{/isSecure}}
 			{{#isBodyParameter}}
 		payload = {{&camelCaseName}};
 			{{/isBodyParameter}}

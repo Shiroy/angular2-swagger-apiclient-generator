@@ -70,14 +70,7 @@ export class {{&className}}ApiClientService {
 			headers.append('{{&name}}', parameters['{{&camelCaseName}}']);
 		}
 			{{/isSingleton}}
-			{{/isHeaderParameter}}
-			{{#isSecure}}
-			{{#securities}}
-		if(this.{{name}}){
-			headers.append('{{headerName}}', this.{{name}});
-		}
-			{{/securities}}
-			{{/isSecure}}
+			{{/isHeaderParameter}}			
 			{{#isBodyParameter}}
 		payload = {{&camelCaseName}};
 			{{/isBodyParameter}}
@@ -91,10 +84,18 @@ export class {{&className}}ApiClientService {
 		}
 			{{/isSingleton}}
 			{{/isFormParameter}}
-{{/parameters}}		
+{{/parameters}}
+
+{{#isSecure}}
+{{#securities}}
+		if(this.{{name}}){
+			headers.append('{{headerName}}', this.{{name}});
+		}
+{{/securities}}
+{{/isSecure}}	
 	
 		return this.http
-			.{{angular2httpMethod}}(this.domain + uri, {{^isGET}}payload,{{/isGET}} { headers: headers}).toPromise()
+			.{{angular2httpMethod}}(this.domain + uri,{{^isGET}}payload,{{/isGET}} { headers: headers}).toPromise()
 			.then((res: Response) => {
 			   {{#hasJsonResponse}}
 			   return new Promise<{ status: number, payload: {{responseTypes}} }>((resolve, reject) => {

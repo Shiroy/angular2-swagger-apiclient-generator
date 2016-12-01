@@ -164,55 +164,84 @@ var Generator = (function () {
                 name: defName,
                 properties: [],
                 refs: [],
+                isUnion: false,
+                unionType: ""
             };
 
-            _.forEach(defin.properties, function (propin, propVal) {
-
-                var property = {
-                    name: propVal,
-                    isRef: _.has(propin, '$ref') || (propin.type === 'array' && _.has(propin.items, '$ref')),
-                    isArray: propin.type === 'array',
-                    type: null,
-                    typescriptType: null
-                };
-
-                if (property.isArray) {
-                    if(_.has(propin.items, '$ref')) {
-                        property.type = that.camelCase(propin.items["$ref"].replace("#/definitions/", ""))
+            if(_.has(defin, 'allOf')){
+                definition.isUnion = true;
+                var unionItems = [];
+                var counter = 1;
+                _.forEach(defin.allOf, function(unionItem) {
+                    if(_.has(unionItem, '$ref')){
+                        var unionItemType = that.camelCase(unionItem["$ref"].replace("#/definitions/", ""));
+                        unionItems.push(unionItemType);
+                        definition.refs.push({type: unionItemType});
                     }
-                    else if(propin.items.type === 'object') {
-                        var subPropertyTypeName = that.camelCase(defName + '-' + propVal + '-' + "Type");
-                        addDefpropin(propin.items, subPropertyTypeName);
-                        property.type = subPropertyTypeName;
+                    else if(unionItem.type === 'object') {
+                        var subPropertyTypeName = that.camelCase(defName + '-Union-Part-' + counter + '-Type');
+                        addDefinitions(unionItem, subPropertyTypeName);
+                        unionItems.push(subPropertyTypeName);
+                        definition.refs.push({type: subPropertyTypeName});
+                    }
+                    else {                        
+                        unionItems.push(unionItem.type);
+                    }
+                });
+
+                definition.unionType = _.uniq(unionItems).join('&');
+            }
+            else {
+                definition.isUnion = false;
+
+                _.forEach(defin.properties, function (propin, propVal) {
+
+                    var property = {
+                        name: propVal,
+                        isRef: _.has(propin, '$ref') || (propin.type === 'array' && _.has(propin.items, '$ref')),
+                        isArray: propin.type === 'array',
+                        type: null,
+                        typescriptType: null
+                    };
+
+                    if (property.isArray) {
+                        if(_.has(propin.items, '$ref')) {
+                            property.type = that.camelCase(propin.items["$ref"].replace("#/definitions/", ""))
+                        }
+                        else if(propin.items.type === 'object') {
+                            var subPropertyTypeName = that.camelCase(defName + '-' + propVal + '-' + "Type");
+                            addDefinitions(propin.items, subPropertyTypeName);
+                            property.type = subPropertyTypeName;
+                        }
+                        else {
+                            property.type = propin.items.type;
+                        }
                     }
                     else {
-                        property.type = propin.items.type;
-                    }
-                }
-                else {
-                    if(_.has(propin, '$ref'))
-                        property.type = that.camelCase(propin["$ref"].replace("#/definitions/", "")) 
-                    else if(propin.type === 'object') {
-                        var subPropertyTypeName = defName + propVal + "Type";
-                        addDefpropin(propin, subPropertyTypeName);
-                        property.type = subPropertyTypeName;
-                    }
-                    else {
-                        property.type = propin.type;
-                    }
-                }                    
+                        if(_.has(propin, '$ref'))
+                            property.type = that.camelCase(propin["$ref"].replace("#/definitions/", "")) 
+                        else if(propin.type === 'object') {
+                            var subPropertyTypeName = defName + propVal + "Type";
+                            addDefinitions(propin, subPropertyTypeName);
+                            property.type = subPropertyTypeName;
+                        }
+                        else {
+                            property.type = propin.type;
+                        }
+                    }                    
 
-                if (property.type === 'integer' || property.type === 'double')
-                    property.typescriptType = 'number';
-                else
-                    property.typescriptType = property.type;
+                    if (property.type === 'integer' || property.type === 'double')
+                        property.typescriptType = 'number';
+                    else
+                        property.typescriptType = property.type;
 
 
-                if (property.isRef)
-                    definition.refs.push(property);
-                else
-                    definition.properties.push(property);
-            });
+                    if (property.isRef)
+                        definition.refs.push(property);
+                    else
+                        definition.properties.push(property);
+                });
+            }
 
             data.definitions.push(definition);
         }
@@ -238,7 +267,7 @@ var Generator = (function () {
                     methodName: op['x-swagger-js-method-name'] ? op['x-swagger-js-method-name'] : (op.operationId ? op.operationId : that.getPathToMethodName(m, path)),
                     method: m.toUpperCase(),
                     angular2httpMethod: m.toLowerCase(),
-                    isGET: m.toUpperCase() === 'GET',
+                    isGET: m.toUpperCase() === 'GET' || m.toUpperCase() === 'DELETE',
                     summary: op.description,
                     isSecure: swagger.security !== undefined || op.security !== undefined,
                     parameters: [],

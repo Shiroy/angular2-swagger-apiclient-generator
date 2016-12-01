@@ -2,6 +2,10 @@
 import { {{type}} } from "./{{type}}"
 {{/refs}}
 
+{{#isUnion}}
+export type {{&name}} = {{&unionType}};
+{{/isUnion}}
+{{^isUnion}}
 export interface {{&name}} {
 {{#properties}}
 	{{#isArray}}
@@ -21,3 +25,4 @@ export interface {{&name}} {
 	{{/isArray}}
 {{/refs}}
 }
+{{/isUnion}}

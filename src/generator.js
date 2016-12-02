@@ -276,7 +276,8 @@ var Generator = (function () {
                     }) || _.some(swagger.produces, function(response) {
                         return response.indexOf('/json') != -1;
                     }),
-                    responses: [],
+                    responses_then: [],
+                    responses_catch: [],
                     securities: data.securities
                 };
 
@@ -395,17 +396,20 @@ var Generator = (function () {
                         response.void = true; 
                     }
 
-                    method.responses.push(response);
+                    if(response.status >= 200 && response.status < 300){
+                        method.responses_then.push(response);
+                    } else {
+                        method.responses_catch.push(response);
+                    }
                 });
 
                 method.responseTypes = '';
 
-                if(method.responses.length == 0)
+                if(method.responses_then.length == 0 && method.responses_catch.length == 0)
                     method.responseTypes = 'any';
                 else {
                     var voidIncluded = false;
-
-                    var allReturnTypes = method.responses.filter(function(r) {
+                    var allReturnTypes = _.concat(method.responses_then, method.responses_catch).filter(function(r) {
                         if(r.void){
                             voidIncluded = true;
                         }

@@ -92,42 +92,53 @@ export class {{&className}}ApiClientService {
 			headers.append('{{headerName}}', this.{{name}});
 		}
 {{/securities}}
-{{/isSecure}}	
-	
-		return this.http
-			.{{angular2httpMethod}}(this.domain + uri,{{^isGET}}payload,{{/isGET}} { headers: headers}).toPromise()
-			.then((res: Response) => {
-			   {{#hasJsonResponse}}
-			   return new Promise<{ status: number, payload: {{responseTypes}} }>((resolve, reject) => {
-				    {{#responses}}
-				    if(res.status == {{status}}) {
-				    	{{#void}}
-				    	resolve({status: {{status}}, payload: null });
-				    	{{/void}}
-				    	{{^void}}
-				    	{{#baseType}}
-				    	resolve({status: {{status}}, payload: res.text(){{#isArray}}[]{{/isArray}}})
-				    	{{/baseType}}
-				    	{{^baseType}}
-				    	resolve({status: {{status}}, payload: res.json() as {{typescriptType}}{{#isArray}}[]{{/isArray}} });
-				    	{{/baseType}} 
-				    	{{/void}}
-				    	return;
-				    }
-				    {{/responses}}
-    
-				    reject(res.toString());
+{{/isSecure}}
+
+		return new Promise<{ status: number, payload: {{responseTypes}} }>((resolve, reject) => {
+			this.http.{{angular2httpMethod}}(this.domain + uri,{{^isGET}}payload,{{/isGET}} { headers: headers}).toPromise()
+			.then((res: Response) => {			   	
+				{{#responses_then}}
+				if(res.status == {{status}}) {
+					{{#void}}
+					resolve({status: {{status}}, payload: null });
+					{{/void}}
+					{{^void}}
+					{{#baseType}}
+					resolve({status: {{status}}, payload: res.text(){{#isArray}}[]{{/isArray}}})
+					{{/baseType}}
+					{{^baseType}}
+					resolve({status: {{status}}, payload: res.json() as {{typescriptType}}{{#isArray}}[]{{/isArray}} });
+					{{/baseType}} 
+					{{/void}}
 					return;
-				});
-			   {{/hasJsonResponse}}
-			   {{^hasJsonResponse}}
-			   var result = null;
-			   
-			   // TODO: this method does not return JSON response, so you need to handle response by your own
-			   {{/hasJsonResponse}}              
+				}
+				{{/responses_then}}
+    
+				reject(res.toString());
+			})
+			.catch((res:Response) => {
+				{{#responses_catch}}
+				if(res.status == {{status}}) {
+					{{#void}}
+					resolve({status: {{status}}, payload: null });
+					{{/void}}
+					{{^void}}
+					{{#baseType}}
+					resolve({status: {{status}}, payload: res.text(){{#isArray}}[]{{/isArray}}})
+					{{/baseType}}
+					{{^baseType}}
+					resolve({status: {{status}}, payload: res.json() as {{typescriptType}}{{#isArray}}[]{{/isArray}} });
+					{{/baseType}} 
+					{{/void}}
+					return;
+				}
+				{{/responses_catch}}
+
+				reject(res.toString());
             });
-	}
-	
+		});
+	}	
+
 {{/methods}}
 
 }
